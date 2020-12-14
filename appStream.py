@@ -4,13 +4,12 @@ from datetime import datetime
 from datetime import timedelta
 import pandas as pd
 import base64
+import calendar
 from io import BytesIO
 from functools import reduce
 from datetime import date
 
-# Configure page
 st.set_page_config(page_title='The boss', page_icon="🔌", layout='wide', initial_sidebar_state='expanded')
-
 
 def process_meters(metering_points: dict):
     """
@@ -275,12 +274,13 @@ def main():
                         date_selection = st.sidebar.date_input("Choose date to where you want to retrieve data from",
                                                                today)
                         if not date_selection >= date.today():
-
-                            # Expander
-                            merged_dataframes = list()
                             st.warning(
                                 f':calendar: Statistical data for {date_selection.day}.{date_selection.month}.'
                                 f'{date_selection.year}')
+
+                            # Expander
+                            merged_dataframes = list()
+
                             data_expaned_stats = process_points(ids, solar, connection_id, selected_date=date_selection)
                             final_data = process_stats(data_expaned_stats)
 
@@ -300,6 +300,7 @@ def main():
                                                                           column_name=chn_stats_cat)
                                         produce_data_window(dataframe=dataframe, id=chn_stats_cat,
                                                             meter_unit=channel_details['unit'])
+
                                         merged_dataframes.append(dataframe)  # Append to list for futher analywsis
 
                             st.success(f"*** :sparkles: Summary ***")
@@ -321,31 +322,36 @@ def main():
                                                              options=month_options,
                                                              index=month_options[today.month - 2])
                         selected_year = pos_year.selectbox(label='Year', options=[2020, 2021, 2022])
+                        month_named = calendar.month_name[selected_month]
 
                         if selected_month <= today.month and selected_year <= today.year:
                             merged_dataframes = list()
-                            st.text(f'Getting data {selected_month}.{selected_year}')
+                            st.warning(f'Getting data for {month_named} {selected_year}')
                             data_expaned_stats = process_points(ids, solar, connection_id, selected_month,
                                                                 selected_year,
                                                                 monthly=True)
                             final_data = process_stats(data_expaned_stats)
-                            for point in final_data:
-                                st.info(f"*** :sparkles: Data for Metering point ID {point['meteringPointId']}***")
-                                filtered = [x for x in point['stats'].keys() if int(x) in [10280, 16080]]
-                                for chn_stats_cat in filtered:
-                                    channel_details = get_channel_details(metering_points=metering_points,
-                                                                          metering_point_id=point['meteringPointId'],
-                                                                          channel_id=chn_stats_cat)
-                                    st.write(f"No: {channel_details['channel']}")
-                                    st.write(f"Direction:{channel_details['direction']}\n")
-                                    st.write(f"Unit:{channel_details['unit']}")
-                                    dataframe = solar.make_data_frame(data=point['stats'][chn_stats_cat],
-                                                                      column_name=chn_stats_cat)
-                                    produce_data_window(dataframe=dataframe, id=chn_stats_cat,
-                                                        meter_unit=channel_details['unit'])
-                                    merged_dataframes.append(dataframe)  # Append to list for futher analywsis
+                            with st.beta_expander("Get details per metering point"):
+                                for point in final_data:
+                                    if point:
+                                        filtered = [x for x in point['stats'].keys() if int(x) in [10280, 16080]]
+                                        for chn_stats_cat in filtered:
+                                            channel_details = get_channel_details(metering_points=metering_points,
+                                                                                  metering_point_id=point['meteringPointId'],
+                                                                                  channel_id=chn_stats_cat)
+                                            st.info(f"*** :sparkles: Metering point ID {point['meteringPointId']}***\n"
+                                                    f"\n > __Channel__: {channel_details['channel']}   | "
+                                                    f"__Direction__: {channel_details['direction']}  | "
+                                                    f"__Unit__: {channel_details['unit']}")
+                                            dataframe = solar.make_data_frame(data=point['stats'][chn_stats_cat],
+                                                                              column_name=chn_stats_cat)
+                                            produce_data_window(dataframe=dataframe, id=chn_stats_cat,
+                                                                meter_unit=channel_details['unit'])
+                                            merged_dataframes.append(dataframe)  # Append to list for futher analywsis
+                                    else:
+                                        pass
 
-                            st.markdown(f"*** :sparkles: Merged Data ***")
+                            st.success(f"*** :sparkles: Summary ***")
                             all_together = reduce(lambda df_left, df_right: pd.merge(df_left, df_right,
                                                                                      left_index=True, right_index=True,
                                                                                      how='outer'), merged_dataframes)
