@@ -9,7 +9,8 @@ from io import BytesIO
 from functools import reduce
 from datetime import date
 
-st.set_page_config(page_title='The boss', page_icon="🔌", layout='wide', initial_sidebar_state='expanded')
+st.set_page_config(page_title='Dashboard', page_icon="🔌", layout='wide', initial_sidebar_state='expanded')
+
 
 def process_meters(metering_points: dict):
     """
@@ -337,7 +338,8 @@ def main():
                                         filtered = [x for x in point['stats'].keys() if int(x) in [10280, 16080]]
                                         for chn_stats_cat in filtered:
                                             channel_details = get_channel_details(metering_points=metering_points,
-                                                                                  metering_point_id=point['meteringPointId'],
+                                                                                  metering_point_id=point[
+                                                                                      'meteringPointId'],
                                                                                   channel_id=chn_stats_cat)
                                             st.info(f"*** :sparkles: Metering point ID {point['meteringPointId']}***\n"
                                                     f"\n > __Channel__: {channel_details['channel']}   | "
