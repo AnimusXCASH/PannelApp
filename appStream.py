@@ -25,8 +25,7 @@ def process_meters(metering_points: dict):
         col1.text(f"Product Type: {m['productType']}\n"
                   f"Metering Point Type: {m['meteringPointType']}\n"
                   f"Meter Numbers: {m['meterNumber']}")
-        col1.text("Available Channels:")
-        col2.subheader("Channels")
+        col2.subheader("Available Channels")
         col2.dataframe(m["channels"])
 
 
@@ -43,14 +42,21 @@ def welcome_string():
 
 
 def successfull_login_info():
-    st.subheader("Available option under Account Menu")
-    st.info("Home:\n"
-            "Landing page of this App")
-    st.info("Get meters:\n"
-            "Returns the information on all currently available metering points connected under your account")
-    st.info("Statistics\n"
-            "You can choose from two different statistics: monthly or daily")
+    st.title("Account Explorer")
+    st.markdown("Below is the information on all available sections accessible through __Account Menu__ drop-down in"
+                " sidebar. They were designed to allow access to information on your ***metering points*** and their "
+                "***statistics*** in sections for ***day*** and ***_month_***.\n"    
+                "\n## :thermometer: Metering Points\n")
+    st.info("> Returns information on all available metering points currently connected to this account."
+    " Details such as __id__, __type__, __channels list with characteristics__ are returned.")
 
+    st.markdown("\n## :bar_chart: Statistics\n")
+    st.info(" Statistical information per each accessible ***__Metering Point ID__*** is returned based on "
+    "pre selected timeframe. Available timeframes are ***__Daily__*** and ***__Monthly__***."
+    " Furthermore statistical data per either channel or merged with all showcased channels is available"
+    " to be downloaded in __csv__ or __excel__ file.\n")
+    st.markdown("\n## :house: Home\n")
+    st.info("> Return to this page.\n")
 
 def download_link(file_to_download, file_name: str, button_text: str, file_type: str):
     """
@@ -243,7 +249,7 @@ def main():
             account_data = solar.get_all_meters()
             if account_data[0]:
                 # Sub menu after log in
-                logged_in_menu = ["Home", "Metering Points", "Statistics", "Dev Mode"]
+                logged_in_menu = ["Home", "Metering Points", "Statistics"]
                 st.sidebar.text("Select option:")
                 action = st.sidebar.selectbox("Account Menu", logged_in_menu)
 
@@ -256,7 +262,6 @@ def main():
 
                 # Start processing menu selections
                 if action == "Home":
-                    st.title("Welcome")
                     successfull_login_info()
                 if action == "Metering Points":
                     process_meters(metering_points)
@@ -340,9 +345,6 @@ def main():
                             produce_total_windows(all_together)
                         else:
                             st.title("Get back to present or past")
-
-                elif menu_choice == "Dev Mode":
-                    st.json(metering_points)
 
             else:
                 error_details = account_data[1]
