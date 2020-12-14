@@ -38,15 +38,17 @@ def welcome_string():
     st.balloons()
     st.title("Welcome to the Solar Panel Explorer")
     st.subheader("How to start?")
-    st.info("On left side of the screen you have side bar through which you can navigate and \n"
-            "access different information about Solar Panels and meters")
+    st.info("Go to sidebar on the left side and choose from drop down menu LOGIN. Provide credential details and if "
+            "account found, you will be automatically logged in after putting a tick into login box.")
 
-    st.subheader("Explanation on available options in side bar")
+
+def successfull_login_info():
+    st.subheader("Available option under Account Menu")
     st.info("Home:\n"
             "Landing page of this App")
     st.info("Get meters:\n"
-            "Basic information on metering points assigned to this account")
-    st.info("Get statistics:\n"
+            "Returns the information on all currently available metering points connected under your account")
+    st.info("Statistics\n"
             "You can choose from two different statistics: monthly or daily")
 
 
@@ -97,11 +99,10 @@ def produce_total_windows(dataframe: pd.DataFrame):
     """
     pos1, pos2, pos3 = st.beta_columns([3, 1, 0.5])
     pos1.line_chart(dataframe)
-    pos2.dataframe(dataframe)
     column_names = list(dataframe.keys())
     for name in column_names:
         pos2.markdown(f'{name} total: {dataframe[name].sum()} ')
-
+    pos2.dataframe(dataframe)
     if pos3.button(f"Get CSV"):
         tmp_download_link = download_link(dataframe, f'YOUR_DF.csv', 'Click here to download your data!',
                                           file_type='csv', )
@@ -242,7 +243,7 @@ def main():
             account_data = solar.get_all_meters()
             if account_data[0]:
                 # Sub menu after log in
-                logged_in_menu = ["Get meters", "Statistics", "Dev Mode"]
+                logged_in_menu = ["Home", "Metering Points", "Statistics", "Dev Mode"]
                 st.sidebar.text("Select option:")
                 action = st.sidebar.selectbox("Account Menu", logged_in_menu)
 
@@ -254,7 +255,10 @@ def main():
                     metering_points)  # Get IDs and channels of each mettering point in array
 
                 # Start processing menu selections
-                if action == "Get meters":
+                if action == "Home":
+                    st.title("Welcome")
+                    successfull_login_info()
+                if action == "Metering Points":
                     process_meters(metering_points)
 
                 elif action == "Statistics":
@@ -297,13 +301,13 @@ def main():
                             st.error("Please selected date which is older than today!")
 
                     elif choice == "Monthly":
-                        print("Monthly activate")
                         st.markdown(f"Connection ID **__{connection_id}__**")
                         posMonth, posYear = st.sidebar.beta_columns([1, 1])
-                        selected_month = posMonth.selectbox(label='month',
-                                                            options=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
-                        selected_year = posYear.selectbox(label='Year', options=[2020, 2021, 2022])
                         today = datetime.today()
+                        month_options = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+                        selected_month = posMonth.selectbox(label='Month',
+                                                            options=month_options, index=month_options[today.month - 2])
+                        selected_year = posYear.selectbox(label='Year', options=[2020, 2021, 2022])
 
                         if selected_month <= today.month and selected_year <= today.year:
                             merged_dataframes = list()
