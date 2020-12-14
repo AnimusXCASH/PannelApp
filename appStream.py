@@ -271,48 +271,55 @@ def main():
                     menu = ["Daily", "Monthly"]
                     choice = st.sidebar.selectbox("Time Frame", menu)
                     if choice == "Daily":
-                        st.markdown(f"Connection ID **__{connection_id}__**")
                         today = datetime.today() - timedelta(1)
                         date_selection = st.sidebar.date_input("Choose date to where you want to retrieve data from",
                                                                today)
                         if not date_selection >= date.today():
+
+                            # Expander
                             merged_dataframes = list()
-                            st.text(
-                                f'Getting data for {date_selection.day}.{date_selection.month}.{date_selection.year}')
+                            st.warning(
+                                f':calendar: Statistical data for {date_selection.day}.{date_selection.month}.'
+                                f'{date_selection.year}')
                             data_expaned_stats = process_points(ids, solar, connection_id, selected_date=date_selection)
                             final_data = process_stats(data_expaned_stats)
-                            for point in final_data:
-                                st.markdown(f"*** :sparkles: Data for Metering point ID {point['meteringPointId']}***")
-                                filtered = [x for x in point['stats'].keys() if int(x) in [10280, 16080]]
-                                for chn_stats_cat in filtered:
-                                    channel_details = get_channel_details(metering_points=metering_points,
-                                                                          metering_point_id=point['meteringPointId'],
-                                                                          channel_id=chn_stats_cat)
-                                    st.write(f"No: {channel_details['channel']}")
-                                    st.write(f"Direction:{channel_details['direction']}\n")
-                                    st.write(f"Unit:{channel_details['unit']}")
-                                    dataframe = solar.make_data_frame(data=point['stats'][chn_stats_cat],
-                                                                      column_name=chn_stats_cat)
-                                    produce_data_window(dataframe=dataframe, id=chn_stats_cat,
-                                                        meter_unit=channel_details['unit'])
-                                    merged_dataframes.append(dataframe)  # Append to list for futher analywsis
 
-                            st.markdown(f"*** :sparkles: Summary ***")
+                            with st.beta_expander("Get details per metering point"):
+                                for point in final_data:
+                                    filtered = [x for x in point['stats'].keys() if int(x) in [10280, 16080]]
+                                    for chn_stats_cat in filtered:
+                                        channel_details = get_channel_details(metering_points=metering_points,
+                                                                              metering_point_id=point[
+                                                                                  'meteringPointId'],
+                                                                              channel_id=chn_stats_cat)
+                                        st.info(f"*** :sparkles: Metering point ID {point['meteringPointId']}***\n"
+                                                f"\n > __Channel__: {channel_details['channel']}   | "
+                                                f"__Direction__: {channel_details['direction']}  | "
+                                                f"__Unit__: {channel_details['unit']}")
+                                        dataframe = solar.make_data_frame(data=point['stats'][chn_stats_cat],
+                                                                          column_name=chn_stats_cat)
+                                        produce_data_window(dataframe=dataframe, id=chn_stats_cat,
+                                                            meter_unit=channel_details['unit'])
+                                        merged_dataframes.append(dataframe)  # Append to list for futher analywsis
+
+                            st.success(f"*** :sparkles: Summary ***")
                             all_together = reduce(lambda df_left, df_right: pd.merge(df_left, df_right,
-                                                                                     left_index=True, right_index=True,
-                                                                                     how='outer'), merged_dataframes)
+                                                                                     left_index=True,
+                                                                                     right_index=True,
+                                                                                     how='outer'),
+                                                  merged_dataframes)
 
                             produce_total_windows(dataframe=all_together)
                         else:
                             st.error("Please selected date which is older than today!")
 
                     elif choice == "Monthly":
-                        st.markdown(f"Connection ID **__{connection_id}__**")
                         pos_month, pos_year = st.sidebar.beta_columns([1, 1])
                         today = datetime.today()
                         month_options = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
                         selected_month = pos_month.selectbox(label='Month',
-                                                            options=month_options, index=month_options[today.month - 2])
+                                                             options=month_options,
+                                                             index=month_options[today.month - 2])
                         selected_year = pos_year.selectbox(label='Year', options=[2020, 2021, 2022])
 
                         if selected_month <= today.month and selected_year <= today.year:
@@ -323,7 +330,7 @@ def main():
                                                                 monthly=True)
                             final_data = process_stats(data_expaned_stats)
                             for point in final_data:
-                                st.markdown(f"*** :sparkles: Data for Metering point ID {point['meteringPointId']}***")
+                                st.info(f"*** :sparkles: Data for Metering point ID {point['meteringPointId']}***")
                                 filtered = [x for x in point['stats'].keys() if int(x) in [10280, 16080]]
                                 for chn_stats_cat in filtered:
                                     channel_details = get_channel_details(metering_points=metering_points,
