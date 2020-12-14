@@ -45,18 +45,19 @@ def successfull_login_info():
     st.title("Account Explorer")
     st.markdown("Below is the information on all available sections accessible through __Account Menu__ drop-down in"
                 " sidebar. They were designed to allow access to information on your ***metering points*** and their "
-                "***statistics*** in sections for ***day*** and ***_month_***.\n"    
+                "***statistics*** in sections for ***day*** and ***_month_***.\n"
                 "\n## :thermometer: Metering Points\n")
-    st.info("> Returns information on all available metering points currently connected to this account."
-    " Details such as __id__, __type__, __channels list with characteristics__ are returned.")
+    st.info("Returns information on all available metering points currently connected to this account."
+            " Details such as __id__, __type__, __channels list with characteristics__ are returned.")
 
     st.markdown("\n## :bar_chart: Statistics\n")
     st.info(" Statistical information per each accessible ***__Metering Point ID__*** is returned based on "
-    "pre selected timeframe. Available timeframes are ***__Daily__*** and ***__Monthly__***."
-    " Furthermore statistical data per either channel or merged with all showcased channels is available"
-    " to be downloaded in __csv__ or __excel__ file.\n")
+            "pre selected timeframe. Available timeframes are ***__Daily__*** and ***__Monthly__***."
+            " Furthermore statistical data per either channel or merged with all showcased channels is available"
+            " to be downloaded in __csv__ or __excel__ file.\n")
     st.markdown("\n## :house: Home\n")
-    st.info("> Return to this page.\n")
+    st.info("Return to this page.\n")
+
 
 def download_link(file_to_download, file_name: str, button_text: str, file_type: str):
     """
@@ -296,7 +297,7 @@ def main():
                                                         meter_unit=channel_details['unit'])
                                     merged_dataframes.append(dataframe)  # Append to list for futher analywsis
 
-                            st.markdown(f"*** :sparkles: Merged Data ***")
+                            st.markdown(f"*** :sparkles: Summary ***")
                             all_together = reduce(lambda df_left, df_right: pd.merge(df_left, df_right,
                                                                                      left_index=True, right_index=True,
                                                                                      how='outer'), merged_dataframes)
@@ -307,12 +308,12 @@ def main():
 
                     elif choice == "Monthly":
                         st.markdown(f"Connection ID **__{connection_id}__**")
-                        posMonth, posYear = st.sidebar.beta_columns([1, 1])
+                        pos_month, pos_year = st.sidebar.beta_columns([1, 1])
                         today = datetime.today()
                         month_options = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-                        selected_month = posMonth.selectbox(label='Month',
+                        selected_month = pos_month.selectbox(label='Month',
                                                             options=month_options, index=month_options[today.month - 2])
-                        selected_year = posYear.selectbox(label='Year', options=[2020, 2021, 2022])
+                        selected_year = pos_year.selectbox(label='Year', options=[2020, 2021, 2022])
 
                         if selected_month <= today.month and selected_year <= today.year:
                             merged_dataframes = list()
