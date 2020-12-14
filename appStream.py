@@ -114,7 +114,7 @@ def produce_total_windows(dataframe: pd.DataFrame):
         tmp_download_link = download_link(dataframe, f'YOUR_DF.csv', 'Click here to download your data!',
                                           file_type='csv', )
         pos3.markdown(tmp_download_link, unsafe_allow_html=True)
-    elif pos3.button(f"Get Xls"):
+    elif pos3.button(f"Get XLS"):
         tmp_download_link = download_link(dataframe, 'YOUR_DF.csv', 'Click here to download your data!',
                                           file_type='xls')
         pos3.markdown(tmp_download_link, unsafe_allow_html=True)
@@ -356,7 +356,7 @@ def main():
 
             else:
                 error_details = account_data[1]
-                st.warning(f"{error_details['title']} or {error_details['type']} access")
+                st.error(f"{error_details['title']} or {error_details['type']} access")
 
 
 if __name__ == "__main__":
