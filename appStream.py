@@ -98,7 +98,7 @@ def dataframe_to_excel(data_frame, sheet_name: str = None):
     return processed_data
 
 
-def produce_total_windows(dataframe: pd.DataFrame):
+def produce_total_windows(dataframe: pd.DataFrame, total: str = None):
     """
     Produce the UX for all data on one chart
     :param dataframe: Pandas Dataframe
@@ -106,9 +106,7 @@ def produce_total_windows(dataframe: pd.DataFrame):
     """
     pos1, pos2, pos3 = st.beta_columns([3, 1, 0.5])
     pos1.line_chart(dataframe)
-    column_names = list(dataframe.keys())
-    for name in column_names:
-        pos2.markdown(f'{name} total: {dataframe[name].sum()} ')
+    pos2.text(total)
     pos2.dataframe(dataframe)
     if pos3.button(f"Get CSV"):
         tmp_download_link = download_link(dataframe, f'YOUR_DF.csv', 'Click here to download your data!',
@@ -130,7 +128,8 @@ def produce_data_window(dataframe, id: str, meter_unit: str):
     """
     pos1, pos2, pos3 = st.beta_columns([4, 1, 0.5])
     pos1.line_chart(dataframe)
-    pos2.markdown(f'Total: {dataframe[f"{id}"].sum()} {meter_unit}')
+    meter_total = f'∑ {id}: {dataframe[f"{id}"].sum()} {meter_unit}'
+    pos2.markdown(meter_total)
     pos2.write(dataframe)
     if pos3.button(f"Get {id} CSV"):
         tmp_download_link = download_link(dataframe, 'YOUR_DF.csv', 'Click here to download your data!',
@@ -140,6 +139,7 @@ def produce_data_window(dataframe, id: str, meter_unit: str):
         tmp_download_link = download_link(dataframe, 'YOUR_DF.csv', 'Click here to download your data!',
                                           file_type='xls')
         st.markdown(tmp_download_link, unsafe_allow_html=True)
+    return meter_total
 
 
 def process_points(ids: list, solar, connection_id, month=None, year=None, selected_date=None,
@@ -284,7 +284,7 @@ def main():
 
                             data_expaned_stats = process_points(ids, solar, connection_id, selected_date=date_selection)
                             final_data = process_stats(data_expaned_stats)
-
+                            string_build = str()
                             with st.beta_expander("Get details per metering point"):
                                 for point in final_data:
                                     filtered = [x for x in point['stats'].keys() if int(x) in [10280, 16080]]
@@ -299,9 +299,9 @@ def main():
                                                 f"__Unit__: {channel_details['unit']}")
                                         dataframe = solar.make_data_frame(data=point['stats'][chn_stats_cat],
                                                                           column_name=chn_stats_cat)
-                                        produce_data_window(dataframe=dataframe, id=chn_stats_cat,
-                                                            meter_unit=channel_details['unit'])
-
+                                        total = produce_data_window(dataframe=dataframe, id=chn_stats_cat,
+                                                                    meter_unit=channel_details['unit'])
+                                        string_build += f'{total}\n'
                                         merged_dataframes.append(dataframe)  # Append to list for futher analywsis
 
                             st.success(f"*** :sparkles: Summary ***")
@@ -310,8 +310,9 @@ def main():
                                                                                      right_index=True,
                                                                                      how='outer'),
                                                   merged_dataframes)
+                            produce_total_windows(dataframe=all_together, total=string_build)
 
-                            produce_total_windows(dataframe=all_together)
+
                         else:
                             st.error("Please selected date which is older than today!")
 
@@ -332,6 +333,7 @@ def main():
                                                                 selected_year,
                                                                 monthly=True)
                             final_data = process_stats(data_expaned_stats)
+                            string_build = str()
                             with st.beta_expander("Get details per metering point"):
                                 for point in final_data:
                                     if point:
@@ -347,9 +349,10 @@ def main():
                                                     f"__Unit__: {channel_details['unit']}")
                                             dataframe = solar.make_data_frame(data=point['stats'][chn_stats_cat],
                                                                               column_name=chn_stats_cat)
-                                            produce_data_window(dataframe=dataframe, id=chn_stats_cat,
-                                                                meter_unit=channel_details['unit'])
+                                            total_returned = produce_data_window(dataframe=dataframe, id=chn_stats_cat,
+                                                                                 meter_unit=channel_details['unit'])
                                             merged_dataframes.append(dataframe)  # Append to list for futher analywsis
+                                            string_build += f'{total_returned}\n'
                                     else:
                                         pass
 
@@ -357,7 +360,7 @@ def main():
                             all_together = reduce(lambda df_left, df_right: pd.merge(df_left, df_right,
                                                                                      left_index=True, right_index=True,
                                                                                      how='outer'), merged_dataframes)
-
+                            produce_total_windows(dataframe=all_together, total=string_build)
                             produce_total_windows(all_together)
                         else:
                             st.title("Get back to present or past")
