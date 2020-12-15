@@ -1,6 +1,7 @@
 import streamlit as st
 from api_access import SolarCheck
 from datetime import datetime
+from datetime import date
 from datetime import timedelta
 import pandas as pd
 import base64
@@ -168,6 +169,25 @@ def process_points(ids: list, solar, connection_id, month=None, year=None, selec
     return new_structure
 
 
+def build_stats(list_of_stats: list):
+    from collections import ChainMap
+    return dict(ChainMap(*list_of_stats))
+
+
+def process_points_for_date_range(ids: list, solar, connection_id, date_range: list):
+    new_structure = list()
+    for id in ids:
+        stats_to_process = list()
+        for d in date_range:
+            id_values = solar.get_daily(connection_id, id["meteringPointId"], d.year, d.month, d.day)
+            if isinstance(id_values, dict):
+                stats_to_process.append(id_values)
+        id['stats'] = build_stats(list_of_stats=stats_to_process)
+        st.json(id)
+        new_structure.append(id)
+    return new_structure
+
+
 def make_new_dictionary(old_one: dict):
     """
     Creates new dictionary from the old one as some key poping is needed
@@ -251,7 +271,6 @@ def main():
             if account_data[0]:
                 # Sub menu after log in
                 logged_in_menu = ["Home", "Metering Points", "Statistics"]
-                st.sidebar.text("Select option:")
                 action = st.sidebar.selectbox("Account Menu", logged_in_menu)
 
                 # Loading required data
@@ -270,52 +289,113 @@ def main():
                 elif action == "Statistics":
                     menu = ["Daily", "Monthly"]
                     choice = st.sidebar.selectbox("Time Frame", menu)
+
+                    # Daily sub category
                     if choice == "Daily":
-                        today = datetime.today() - timedelta(1)
-                        date_selection = st.sidebar.date_input("Choose date to where you want to retrieve data from",
-                                                               today)
-                        if not date_selection >= date.today():
-                            st.warning(
-                                f':calendar: Statistical data for {date_selection.day}.{date_selection.month}.'
-                                f'{date_selection.year}')
+                        menu_for_day = ["Date", "Range"]
+                        choice_daily = st.sidebar.selectbox("Choose Data Type", menu_for_day)
 
-                            # Expander
-                            merged_dataframes = list()
+                        # Processing data for specific day
+                        if choice_daily == "Date":
+                            today = datetime.today() - timedelta(1)
+                            date_selection = st.sidebar.date_input(
+                                "Choose date to where you want to retrieve data from",
+                                today)
+                            if not date_selection >= date.today():
+                                st.warning(
+                                    f':calendar: Statistical data for {date_selection.day}.{date_selection.month}.'
+                                    f'{date_selection.year}')
 
-                            data_expaned_stats = process_points(ids, solar, connection_id, selected_date=date_selection)
-                            final_data = process_stats(data_expaned_stats)
-                            string_build = str()
-                            with st.beta_expander("Get details per metering point"):
-                                for point in final_data:
-                                    filtered = [x for x in point['stats'].keys() if int(x) in [10280, 16080]]
-                                    for chn_stats_cat in filtered:
-                                        channel_details = get_channel_details(metering_points=metering_points,
-                                                                              metering_point_id=point[
-                                                                                  'meteringPointId'],
-                                                                              channel_id=chn_stats_cat)
-                                        st.info(f"*** :sparkles: Metering point ID {point['meteringPointId']}***\n"
-                                                f"\n > __Channel__: {channel_details['channel']}   | "
-                                                f"__Direction__: {channel_details['direction']}  | "
-                                                f"__Unit__: {channel_details['unit']}")
-                                        dataframe = solar.make_data_frame(data=point['stats'][chn_stats_cat],
-                                                                          column_name=chn_stats_cat)
-                                        total = produce_data_window(dataframe=dataframe, id=chn_stats_cat,
-                                                                    meter_unit=channel_details['unit'])
-                                        string_build += f'{total}\n'
-                                        merged_dataframes.append(dataframe)  # Append to list for futher analywsis
+                                # Expander
+                                merged_dataframes = list()
 
-                            st.success(f"*** :sparkles: Summary ***")
-                            all_together = reduce(lambda df_left, df_right: pd.merge(df_left, df_right,
-                                                                                     left_index=True,
-                                                                                     right_index=True,
-                                                                                     how='outer'),
-                                                  merged_dataframes)
-                            produce_total_windows(dataframe=all_together, total=string_build)
+                                data_expaned_stats = process_points(ids, solar, connection_id,
+                                                                    selected_date=date_selection)
+                                final_data = process_stats(data_expaned_stats)
+                                string_build = str()
+                                with st.beta_expander("Get details per metering point"):
+                                    for point in final_data:
+                                        filtered = [x for x in point['stats'].keys() if int(x) in [10280, 16080]]
+                                        for chn_stats_cat in filtered:
+                                            channel_details = get_channel_details(metering_points=metering_points,
+                                                                                  metering_point_id=point[
+                                                                                      'meteringPointId'],
+                                                                                  channel_id=chn_stats_cat)
+                                            st.info(f"*** :sparkles: Metering point ID {point['meteringPointId']}***\n"
+                                                    f"\n > __Channel__: {channel_details['channel']}   | "
+                                                    f"__Direction__: {channel_details['direction']}  | "
+                                                    f"__Unit__: {channel_details['unit']}")
+                                            dataframe = solar.make_data_frame(data=point['stats'][chn_stats_cat],
+                                                                              column_name=chn_stats_cat)
+                                            total = produce_data_window(dataframe=dataframe, id=chn_stats_cat,
+                                                                        meter_unit=channel_details['unit'])
+                                            string_build += f'{total}\n'
+                                            merged_dataframes.append(dataframe)  # Append to list for futher analywsis
 
+                                st.success(f"*** :sparkles: Summary ***")
+                                all_together = reduce(lambda df_left, df_right: pd.merge(df_left, df_right,
+                                                                                         left_index=True,
+                                                                                         right_index=True,
+                                                                                         how='outer'),
+                                                      merged_dataframes)
+                                produce_total_windows(dataframe=all_together, total=string_build)
 
-                        else:
-                            st.error("Please selected date which is older than today!")
+                            else:
+                                st.error("Please selected date which is older than today!")
 
+                        # Processing data for specific date range
+                        elif choice_daily == "Range":
+                            today = date.today()
+                            past_day = today + timedelta(days=-1)
+                            two_day_back = today + timedelta(days=-2)
+                            start_date = st.sidebar.date_input("From", two_day_back)
+                            end_date = st.sidebar.date_input("To", past_day)
+                            if start_date < end_date < today:  # Check allowed range...
+                                st.warning(
+                                    f':calendar: Statistical data for range {two_day_back} to {past_day}')
+                                st.success(f"Start date {start_date}\n end date {end_date}")
+
+                                # current range difference
+                                range_size = end_date - start_date
+                                date_list = [start_date + timedelta(days=d) for d in range(range_size.days + 1)]
+
+                                data_expanded_stats = process_points_for_date_range(ids=ids, solar=solar,
+                                                                                    connection_id=connection_id,
+                                                                                    date_range=date_list)
+                                final_data = process_stats(data_expanded_stats)
+
+                                string_build = str()
+                                merged_dataframes = list()
+                                with st.beta_expander("Get details per each metering point"):
+                                    for point in final_data:
+                                        filtered = [x for x in point['stats'].keys() if int(x) in [10280, 16080]]
+                                        for chn_stats_cat in filtered:
+                                            channel_details = get_channel_details(metering_points=metering_points,
+                                                                                  metering_point_id=point[
+                                                                                      'meteringPointId'],
+                                                                                  channel_id=chn_stats_cat)
+                                            st.info(f"*** :sparkles: Metering point ID {point['meteringPointId']}***\n"
+                                                    f"\n > __Channel__: {channel_details['channel']}   | "
+                                                    f"__Direction__: {channel_details['direction']}  | "
+                                                    f"__Unit__: {channel_details['unit']}")
+                                            dataframe = solar.make_data_frame(data=point['stats'][chn_stats_cat],
+                                                                              column_name=chn_stats_cat)
+                                            total = produce_data_window(dataframe=dataframe, id=chn_stats_cat,
+                                                                        meter_unit=channel_details['unit'])
+                                            string_build += f'{total}\n'
+                                            merged_dataframes.append(dataframe)  # Append to list for futher analywsis
+                                st.success(f"*** :sparkles: Summary ***")
+                                all_together = reduce(lambda df_left, df_right: pd.merge(df_left, df_right,
+                                                                                         left_index=True,
+                                                                                         right_index=True,
+                                                                                         how='outer'),
+                                                      merged_dataframes)
+                                produce_total_windows(dataframe=all_together, total=string_build)
+                            else:
+                                st.error('Wrong date range specified. Range queries are allowed only for given month'
+                                         ' up to TODAY-1 as system does not provide current day data.')
+
+                    # Monthly Sub category
                     elif choice == "Monthly":
                         pos_month, pos_year = st.sidebar.beta_columns([1, 1])
                         today = datetime.today()
