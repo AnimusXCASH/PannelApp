@@ -361,7 +361,6 @@ def main():
                                                                                      left_index=True, right_index=True,
                                                                                      how='outer'), merged_dataframes)
                             produce_total_windows(dataframe=all_together, total=string_build)
-                            produce_total_windows(all_together)
                         else:
                             st.title("Get back to present or past")
 
