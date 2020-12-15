@@ -51,10 +51,12 @@ def successfull_login_info():
             " Details such as __id__, __type__, __channels list with characteristics__ are returned.")
 
     st.markdown("\n## :bar_chart: Statistics\n")
-    st.info(" Statistical information per each accessible ***__Metering Point ID__*** is returned based on "
-            "pre selected timeframe. Available timeframes are ***__Daily__*** and ***__Monthly__***."
-            " Furthermore statistical data per either channel or merged with all showcased channels is available"
-            " to be downloaded in __csv__ or __excel__ file.\n")
+    st.info("Statistical information per each accessible ***__Metering Point ID__*** is returned based on "
+            "pre selected timeframe and Data type. Available timeframes are ***__Daily__*** and ***__Monthly__***."
+            " ***Daily*** timeframe has as well two further options which allow you to obtain either data for specific "
+            " day or for day range inside the current month.\n"
+            " Furthermore statistical data per either channel or merged with all showcased channels is available to be "
+            "downloaded in __csv__ or __excel__ format.")
     st.markdown("\n## :house: Home\n")
     st.info("Return to this page.\n")
 
