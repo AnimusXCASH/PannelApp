@@ -94,3 +94,19 @@ class SolarCheck:
         df.set_index("snapshot", inplace=True)
         df.rename({'value': column_name}, axis='columns', inplace=True)
         return df
+
+    @staticmethod
+    def filter_data_frame(data: list, column_name: str, start_date, end_date):
+        for stat in data:
+            stat["snapshot"] = datetime.fromtimestamp(stat["timestamp"])
+            stat.pop("origin")
+            stat.pop("status")
+        df = pd.DataFrame.from_dict(data)
+        df.loc[:, 'timestamp'] = df.timestamp.apply(lambda x: datetime.fromtimestamp(x).date())
+        mask = (df['timestamp'] > start_date) & (
+                df['timestamp'] <= end_date)
+        filtered_df = df.loc[mask]
+        filtered_df.drop(['timestamp'], axis=1, inplace=True)
+        filtered_df.set_index("snapshot", inplace=True)
+        filtered_df.rename({'value': column_name}, axis='columns', inplace=True)
+        return filtered_df
